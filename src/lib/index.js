@@ -1,41 +1,49 @@
 import { assert } from 'chai'
-import { createAction } from 'redux-actions'
 
 /**
- * Creates an action blueprint. Allows delayed assignment of action type which is useful for library designers requiring namespaced action types.
- * @example <caption>Create an action blueprint then translate it to get its action creator at a later time.</caption>
- * const createActionType = actionName => `SOME_REDUX_LIB_${actionName}`
- * let blueprint = createBlueprint('MOUSE_EVENT', (x, y) => ({x, y}), eventType => ({ eventType }))
- * let actionCreator = blueprint(createActionType)
- * @param  {String}   actionName     The name of the action (will be constructed at later time to get action type.)
- * @param  {Function} payloadCreator Function that accepts action args and returns a FSA action payload.
- * @param  {Function} metaCreator    Function that accepts action args and returns a FSA meta payload.
- * @return {Function}                An action blueprint function that accepts an action type creator function as param to return an action creator.
+ * Takes in an ordered mapping of names to stores and reduces to a redux store compatible interface that can dispatch and getState to all stores or specific ones.
+ * @example <caption>Creates a store multiplexer that can dispatch and getState on all stores at once.</caption>
+ * let stores = createStoreMultiplexer([['app', appStore], ['fast', fastStore], ['session', sessionStore], ['local', localStore]])
+ * stores.dispatch('SOME_ACTION')
+ * let { app, fast, session, local } = stores.getState()
+ * @example <caption>Each store can still be individually called with dispatched and getState</caption>
+ * stores.app.dispatch('ACTION_FOR_APP_STORE_ONLY') 
+ * let appState = stores.app.getState()
+ * @param  {Array} storeMapping  The mapping of store names to store references.
+ * @return {Object}              An object that can dispatch and getState to all stores or each individually with some useful helpers.
  */
-export const createBlueprint = (actionName, payloadCreator = args => args, metaCreator = args => args) => createActionType => {
-  return createAction(createActionType(actionName), args => payloadCreator(args), args => metaCreator(args))
-}
+export const createStoreMultiplexer = (storeMapping) => {
+  assert.ok(storeMapping, 'storeMapping is required')
+  assert(Array.isArray(storeMapping), 'storeMapping must be an array')
+  assert(storeMapping.every(x => Array.isArray(x) && x.length === 2), 'storeMapping must be an array of [<name>, <store>] arrays')
 
+  const storeMap = new Map(storeMapping)
+  const mapReduceStores = operation => {
+    let result = {}
+    for(let [name, store] of storeMap.entries())
+      result[name] = operation(store)
+    return result
+  }
 
-/**
- * Creates a translator that turns actionBlueprints into redux-actions FSA actionCreators
- * @example <caption>Creates a function that can translate an array or object literal with blueprint values to actions.</caption>
- * const createActionType = actionName => `SOME_REDUX_LIB_${actionName}`
- * const translateBlueprints = createBlueprintsTranslator(createActionType)
- * let startBlueprint = createBlueprint('START')
- * let endBlueprint = createBlueprint('END')
- * let { startAction, endAction } = translateBlueprints({ startAction: startBlueprint, endAction: endBlueprint })
- * dispatch(startAction())
- * @param  {Function} createActionType    Function that accepts an action name and returns an action type
- * @return {actionCreator}                A redux-actions FSA action creator
- */
-export const createBlueprintsTranslator = createActionType => blueprints => {
-  assert.ok(blueprints, 'blueprints are required')
-  if(Array.isArray(blueprints))
-    return blueprints.map(x => blueprint(createActionType))
-  assert(typeof blueprints === 'object', 'blueprints must be array or object')
-  return Object.keys(blueprints).reduce((actionCreators, x) => {
-    actionCreators[x] = blueprints[x](createActionType)
-    return actionCreators
+  const storesLiteral = storeMapping.reduce((prev, [name, store]) => {
+    prev[name] = store
+    return prev
   }, {})
+
+  const dispatch = action => mapReduceStores(store => store.dispatch(action))
+  const getState = () => mapReduceStores(store => store.getState())
+  const selectFirst = (...names) => {
+    for(let name of names) {
+      if(storeMap.has(name))
+        return storeMap.get(name)
+    }
+    throw new Error(`None of the requested stores exist in storeMapping | configured => ${JSON.stringify(storeMapping.map(x => x[0]))} requested => ${JSON.stringify(names)}`)
+  }
+  const select = (...names) => names.filter(x => storeMap.has(x)).map(x => storeMap.get(x))
+  return  { ...storesLiteral
+          , dispatch
+          , getState
+          , selectFirst
+          , select
+          }
 }
