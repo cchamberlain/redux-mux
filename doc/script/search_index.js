@@ -1,8 +1,20 @@
 window.esdocSearchIndex = [
   [
+    "redux-mux~bisectstore",
+    "variable/index.html#static-variable-bisectStore",
+    "<span>bisectStore</span> <span class=\"search-result-import-path\">redux-mux</span>",
+    "variable"
+  ],
+  [
     "redux-mux~createstoremultiplexer",
     "variable/index.html#static-variable-createStoreMultiplexer",
     "<span>createStoreMultiplexer</span> <span class=\"search-result-import-path\">redux-mux</span>",
+    "variable"
+  ],
+  [
+    "redux-mux~selectstate",
+    "variable/index.html#static-variable-selectState",
+    "<span>selectState</span> <span class=\"search-result-import-path\">redux-mux</span>",
     "variable"
   ],
   [
