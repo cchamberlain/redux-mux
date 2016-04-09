@@ -7,7 +7,7 @@ import { assert } from 'chai'
  * stores.dispatch('SOME_ACTION')
  * let { app, fast, session, local } = stores.getState()
  * @example <caption>Each store can still be individually called with dispatched and getState</caption>
- * stores.app.dispatch('ACTION_FOR_APP_STORE_ONLY') 
+ * stores.app.dispatch('ACTION_FOR_APP_STORE_ONLY')
  * let appState = stores.app.getState()
  * @param  {Array} storeMapping  The mapping of store names to store references.
  * @return {Object}              An object that can dispatch and getState to all stores or each individually with some useful helpers.
@@ -47,3 +47,41 @@ export const createStoreMultiplexer = (storeMapping) => {
           , select
           }
 }
+
+
+
+/**
+ * Returns object implementing redux store interface whose getState method selects a sub tree of the overall state.
+ * Useful for library components that embed state in a subnode of consumer apps redux state
+ * @param  {Object}    store      A store to bisect
+ * @param  {...String} selectKeys The selection path to use with getState
+ * @return {Object}               A sub store implementing redux store interface
+ */
+export const bisectStore = (store, ...selectKeys) => {
+  assert.ok(store, 'store must exist')
+  assert.ok(store.dispatch, 'store must define dispatch')
+  assert.ok(store.getState, 'store must define getState')
+  assert(selectKeys.length > 0, 'must define one or more keys to select on')
+
+  return  { dispatch: action => store.dispatch(action)
+          , subscribe: listener => store.subscribe(listener)
+          , getState: () => selectState(selectKeys, store.getState())
+          }
+}
+
+
+
+/** Selects a sub state from a state tree by path. */
+export const selectState = (selectKeys, state, defaultValue) => {
+  assert(Array.isArray(selectKeys), 'selectKeys must be an array.')
+  assert(selectKeys.length > 0, 'must specify a selection path')
+  assert.ok(state, 'state is required')
+  let result = state
+  for(let selectKey of selectKeys) {
+    result = state[selectKey]
+    if(!result)
+      break
+  }
+  return result || defaultValue
+}
+
