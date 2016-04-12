@@ -48,8 +48,6 @@ export const createStoreMultiplexer = (storeMapping) => {
           }
 }
 
-
-
 /**
  * Returns object implementing redux store interface whose getState method selects a sub tree of the overall state.
  * Useful for library components that embed state in a subnode of consumer apps redux state
@@ -57,7 +55,7 @@ export const createStoreMultiplexer = (storeMapping) => {
  * @param  {...String} selectKeys The selection path to use with getState
  * @return {Object}               A sub store implementing redux store interface
  */
-export const bisectStore = (store, ...selectKeys) => {
+export const bisectStore = (...selectKeys) => store => {
   assert.ok(store, 'store must exist')
   assert.ok(store.dispatch, 'store must define dispatch')
   assert.ok(store.getState, 'store must define getState')
@@ -68,8 +66,6 @@ export const bisectStore = (store, ...selectKeys) => {
           , getState: () => selectState(selectKeys, store.getState())
           }
 }
-
-
 
 /** Selects a sub state from a state tree by path. */
 export const selectState = (selectKeys, state, defaultValue) => {
@@ -84,4 +80,3 @@ export const selectState = (selectKeys, state, defaultValue) => {
   }
   return result || defaultValue
 }
-
