@@ -12,7 +12,7 @@ import { assert } from 'chai'
  * @param  {Array} storeMapping  The mapping of store names to store references.
  * @return {Object}              An object that can dispatch and getState to all stores or each individually with some useful helpers.
  */
-export const createStoreMultiplexer = (storeMapping) => {
+export const createStoreMultiplexer = storeMapping => {
   assert.ok(storeMapping, 'storeMapping is required')
   assert(Array.isArray(storeMapping), 'storeMapping must be an array')
   assert(storeMapping.every(x => Array.isArray(x) && x.length === 2), 'storeMapping must be an array of [<name>, <store>] arrays')
@@ -47,6 +47,7 @@ export const createStoreMultiplexer = (storeMapping) => {
           , select
           }
 }
+
 
 /**
  * Returns object implementing redux store interface whose getState method selects a sub tree of the overall state.
