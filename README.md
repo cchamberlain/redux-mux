@@ -1,8 +1,7 @@
 # redux-mux
 
-[![NPM](https://nodei.co/npm/redux-mux.png?stars=true&downloadRank=true)](https://nodei.co/npm/redux-mux/)
+[![NPM](https://nodei.co/npm/redux-mux.png?stars=true&downloads=true)](https://nodei.co/npm/redux-mux/)
 
-[![NPM](https://nodei.co/npm-dl/redux-mux.png?months=1)](https://nodei.co/npm/redux-mux/)
 
 Redux abstraction for working with multiple redux stores.
 
