@@ -54,7 +54,7 @@
  * @param  {Array} storeMapping  The mapping of store names to store references.
  * @return {Object}              An object that can dispatch and getState to all stores or each individually with some useful helpers.
  */
-export const createStoreMultiplexer = (storeMapping) =&gt; {
+export const createStoreMultiplexer = storeMapping =&gt; {
   assert.ok(storeMapping, &apos;storeMapping is required&apos;)
   assert(Array.isArray(storeMapping), &apos;storeMapping must be an array&apos;)
   assert(storeMapping.every(x =&gt; Array.isArray(x) &amp;&amp; x.length === 2), &apos;storeMapping must be an array of [&lt;name&gt;, &lt;store&gt;] arrays&apos;)
@@ -89,6 +89,7 @@ export const createStoreMultiplexer = (storeMapping) =&gt; {
           , select
           }
 }
+
 
 /**
  * Returns object implementing redux store interface whose getState method selects a sub tree of the overall state.
