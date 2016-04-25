@@ -6,15 +6,21 @@ window.esdocSearchIndex = [
     "variable"
   ],
   [
-    "redux-mux~createstoremultiplexer",
-    "variable/index.html#static-variable-createStoreMultiplexer",
-    "<span>createStoreMultiplexer</span> <span class=\"search-result-import-path\">redux-mux</span>",
+    "redux-mux~createstatebisector",
+    "variable/index.html#static-variable-createStateBisector",
+    "<span>createStateBisector</span> <span class=\"search-result-import-path\">redux-mux</span>",
     "variable"
   ],
   [
-    "redux-mux~selectstate",
-    "variable/index.html#static-variable-selectState",
-    "<span>selectState</span> <span class=\"search-result-import-path\">redux-mux</span>",
+    "redux-mux~createstateselector",
+    "variable/index.html#static-variable-createStateSelector",
+    "<span>createStateSelector</span> <span class=\"search-result-import-path\">redux-mux</span>",
+    "variable"
+  ],
+  [
+    "redux-mux~createstoremultiplexer",
+    "variable/index.html#static-variable-createStoreMultiplexer",
+    "<span>createStoreMultiplexer</span> <span class=\"search-result-import-path\">redux-mux</span>",
     "variable"
   ],
   [
