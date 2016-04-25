@@ -33,14 +33,17 @@
   <ul>
     
   <li data-ice="doc"><span data-ice="kind" class="kind-variable">V</span><span data-ice="name"><span><a href="variable/index.html#static-variable-bisectStore">bisectStore</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-variable">V</span><span data-ice="name"><span><a href="variable/index.html#static-variable-createStateBisector">createStateBisector</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-variable">V</span><span data-ice="name"><span><a href="variable/index.html#static-variable-createStateSelector">createStateSelector</a></span></span></li>
 <li data-ice="doc"><span data-ice="kind" class="kind-variable">V</span><span data-ice="name"><span><a href="variable/index.html#static-variable-createStoreMultiplexer">createStoreMultiplexer</a></span></span></li>
-<li data-ice="doc"><span data-ice="kind" class="kind-variable">V</span><span data-ice="name"><span><a href="variable/index.html#static-variable-selectState">selectState</a></span></span></li>
 </ul>
 </div>
 </nav>
 
 <div class="content" data-ice="content"><h1 data-ice="title">lib/index.js</h1>
 <pre class="source-code line-number raw-source-code"><code class="prettyprint linenums" data-ice="content">import { assert } from &apos;chai&apos;
+
+const IS_DEV = process.env.NODE_ENV !== &apos;production&apos;
 
 /**
  * Takes in an ordered mapping of names to stores and reduces to a redux store compatible interface that can dispatch and getState to all stores or specific ones.
@@ -55,9 +58,9 @@
  * @return {Object}              An object that can dispatch and getState to all stores or each individually with some useful helpers.
  */
 export const createStoreMultiplexer = storeMapping =&gt; {
-  assert.ok(storeMapping, &apos;storeMapping is required&apos;)
-  assert(Array.isArray(storeMapping), &apos;storeMapping must be an array&apos;)
-  assert(storeMapping.every(x =&gt; Array.isArray(x) &amp;&amp; x.length === 2), &apos;storeMapping must be an array of [&lt;name&gt;, &lt;store&gt;] arrays&apos;)
+  if(IS_DEV) assert.ok(storeMapping, &apos;storeMapping is required&apos;)
+  if(IS_DEV) assert(Array.isArray(storeMapping), &apos;storeMapping must be an array&apos;)
+  if(IS_DEV) assert(storeMapping.every(x =&gt; Array.isArray(x) &amp;&amp; x.length === 2), &apos;storeMapping must be an array of [&lt;name&gt;, &lt;store&gt;] arrays&apos;)
 
   const storeMap = new Map(storeMapping)
   const mapReduceStores = operation =&gt; {
@@ -98,30 +101,42 @@ export const createStoreMultiplexer = storeMapping =&gt; {
  * @param  {...String} selectKeys The selection path to use with getState
  * @return {Object}               A sub store implementing redux store interface
  */
-export const bisectStore = (...selectKeys) =&gt; store =&gt; {
-  assert.ok(store, &apos;store must exist&apos;)
-  assert.ok(store.dispatch, &apos;store must define dispatch&apos;)
-  assert.ok(store.getState, &apos;store must define getState&apos;)
-  assert(selectKeys.length &gt; 0, &apos;must define one or more keys to select on&apos;)
-
+export const bisectStore = (...selectKeys) =&gt; (store, defaultState) =&gt; {
+  if(IS_DEV) assert.ok(store, &apos;store must exist&apos;)
+  if(IS_DEV) assert.ok(store.dispatch, &apos;store must define dispatch&apos;)
+  if(IS_DEV) assert.ok(store.getState, &apos;store must define getState&apos;)
+  if(IS_DEV) assert(selectKeys.length &gt; 0, &apos;must define one or more keys to select on&apos;)
+  const selectState = createStateSelector(...selectKeys)
   return  { dispatch: action =&gt; store.dispatch(action)
           , subscribe: listener =&gt; store.subscribe(listener)
-          , getState: () =&gt; selectState(selectKeys, store.getState())
+          , getState: () =&gt; selectState(store.getState(), defaultState)
           }
 }
 
-/** Selects a sub state from a state tree by path. */
-export const selectState = (selectKeys, state, defaultValue) =&gt; {
-  assert(Array.isArray(selectKeys), &apos;selectKeys must be an array.&apos;)
-  assert(selectKeys.length &gt; 0, &apos;must specify a selection path&apos;)
-  assert.ok(state, &apos;state is required&apos;)
+
+/** Creates a function that selects a sub state from a state tree by path. */
+export const createStateSelector = (...selectKeys) =&gt; (state, defaultState) =&gt; {
+  const hasDefault = typeof defaultState !== &apos;undefined&apos;
+  if(IS_DEV) assert(Array.isArray(selectKeys), &apos;selectKeys must be an array.&apos;)
+  if(IS_DEV) assert(selectKeys.length &gt; 0, &apos;must specify a selection path&apos;)
+  if(IS_DEV) assert.ok(state, &apos;state is required&apos;)
   let result = state
   for(let selectKey of selectKeys) {
-    result = state[selectKey]
+    result = result[selectKey]
+    if(IS_DEV) assert.ok(hasDefault || result, `&apos;${selectKey}&apos; state must exist in redux state in key chain [${selectKeys.join(&apos;, &apos;)}] (did you forget to import &apos;${selectKeys[0]}&apos; reducer from its library into your combined reducers?) ${JSON.stringify({ state })}`)
     if(!result)
       break
   }
-  return result || defaultValue
+  return result || defaultState
+}
+
+/**
+ * Creates a function that accepts state and ID for components that require state normalization across multiple instances and returns a function that will select state for the component.
+ * @param  {string[]|number[]} selectKeys 1 or more key arguments to select the root state to bisect on.
+ * @return {Function}                     Function that takes an ID and reutrns a normalized state for that ID.
+ */
+export const createStateBisector = (...selectKeys) =&gt; {
+  return id =&gt; createStateSelector(...selectKeys, id)
 }
 </code></pre>
 

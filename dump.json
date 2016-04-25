@@ -10,10 +10,31 @@
     "access": null,
     "description": null,
     "lineNumber": 1,
-    "content": "import { assert } from 'chai'\r\n\r\n/**\r\n * Takes in an ordered mapping of names to stores and reduces to a redux store compatible interface that can dispatch and getState to all stores or specific ones.\r\n * @example <caption>Creates a store multiplexer that can dispatch and getState on all stores at once.</caption>\r\n * let stores = createStoreMultiplexer([['app', appStore], ['fast', fastStore], ['session', sessionStore], ['local', localStore]])\r\n * stores.dispatch('SOME_ACTION')\r\n * let { app, fast, session, local } = stores.getState()\r\n * @example <caption>Each store can still be individually called with dispatched and getState</caption>\r\n * stores.app.dispatch('ACTION_FOR_APP_STORE_ONLY')\r\n * let appState = stores.app.getState()\r\n * @param  {Array} storeMapping  The mapping of store names to store references.\r\n * @return {Object}              An object that can dispatch and getState to all stores or each individually with some useful helpers.\r\n */\r\nexport const createStoreMultiplexer = storeMapping => {\r\n  assert.ok(storeMapping, 'storeMapping is required')\r\n  assert(Array.isArray(storeMapping), 'storeMapping must be an array')\r\n  assert(storeMapping.every(x => Array.isArray(x) && x.length === 2), 'storeMapping must be an array of [<name>, <store>] arrays')\r\n\r\n  const storeMap = new Map(storeMapping)\r\n  const mapReduceStores = operation => {\r\n    let result = {}\r\n    for(let [name, store] of storeMap.entries())\r\n      result[name] = operation(store)\r\n    return result\r\n  }\r\n\r\n  const storesLiteral = storeMapping.reduce((prev, [name, store]) => {\r\n    prev[name] = store\r\n    return prev\r\n  }, {})\r\n\r\n  const dispatch = action => mapReduceStores(store => store.dispatch(action))\r\n  const getState = () => mapReduceStores(store => store.getState())\r\n  const selectFirst = (...names) => {\r\n    for(let name of names) {\r\n      if(storeMap.has(name))\r\n        return storeMap.get(name)\r\n    }\r\n    throw new Error(`None of the requested stores exist in storeMapping | configured => ${JSON.stringify(storeMapping.map(x => x[0]))} requested => ${JSON.stringify(names)}`)\r\n  }\r\n  const select = (...names) => names.filter(x => storeMap.has(x)).map(x => storeMap.get(x))\r\n  return  { ...storesLiteral\r\n          , dispatch\r\n          , getState\r\n          , selectFirst\r\n          , select\r\n          }\r\n}\r\n\r\n\r\n/**\r\n * Returns object implementing redux store interface whose getState method selects a sub tree of the overall state.\r\n * Useful for library components that embed state in a subnode of consumer apps redux state\r\n * @param  {Object}    store      A store to bisect\r\n * @param  {...String} selectKeys The selection path to use with getState\r\n * @return {Object}               A sub store implementing redux store interface\r\n */\r\nexport const bisectStore = (...selectKeys) => store => {\r\n  assert.ok(store, 'store must exist')\r\n  assert.ok(store.dispatch, 'store must define dispatch')\r\n  assert.ok(store.getState, 'store must define getState')\r\n  assert(selectKeys.length > 0, 'must define one or more keys to select on')\r\n\r\n  return  { dispatch: action => store.dispatch(action)\r\n          , subscribe: listener => store.subscribe(listener)\r\n          , getState: () => selectState(selectKeys, store.getState())\r\n          }\r\n}\r\n\r\n/** Selects a sub state from a state tree by path. */\r\nexport const selectState = (selectKeys, state, defaultValue) => {\r\n  assert(Array.isArray(selectKeys), 'selectKeys must be an array.')\r\n  assert(selectKeys.length > 0, 'must specify a selection path')\r\n  assert.ok(state, 'state is required')\r\n  let result = state\r\n  for(let selectKey of selectKeys) {\r\n    result = state[selectKey]\r\n    if(!result)\r\n      break\r\n  }\r\n  return result || defaultValue\r\n}\r\n"
+    "content": "import { assert } from 'chai'\r\n\r\nconst IS_DEV = process.env.NODE_ENV !== 'production'\r\n\r\n/**\r\n * Takes in an ordered mapping of names to stores and reduces to a redux store compatible interface that can dispatch and getState to all stores or specific ones.\r\n * @example <caption>Creates a store multiplexer that can dispatch and getState on all stores at once.</caption>\r\n * let stores = createStoreMultiplexer([['app', appStore], ['fast', fastStore], ['session', sessionStore], ['local', localStore]])\r\n * stores.dispatch('SOME_ACTION')\r\n * let { app, fast, session, local } = stores.getState()\r\n * @example <caption>Each store can still be individually called with dispatched and getState</caption>\r\n * stores.app.dispatch('ACTION_FOR_APP_STORE_ONLY')\r\n * let appState = stores.app.getState()\r\n * @param  {Array} storeMapping  The mapping of store names to store references.\r\n * @return {Object}              An object that can dispatch and getState to all stores or each individually with some useful helpers.\r\n */\r\nexport const createStoreMultiplexer = storeMapping => {\r\n  if(IS_DEV) assert.ok(storeMapping, 'storeMapping is required')\r\n  if(IS_DEV) assert(Array.isArray(storeMapping), 'storeMapping must be an array')\r\n  if(IS_DEV) assert(storeMapping.every(x => Array.isArray(x) && x.length === 2), 'storeMapping must be an array of [<name>, <store>] arrays')\r\n\r\n  const storeMap = new Map(storeMapping)\r\n  const mapReduceStores = operation => {\r\n    let result = {}\r\n    for(let [name, store] of storeMap.entries())\r\n      result[name] = operation(store)\r\n    return result\r\n  }\r\n\r\n  const storesLiteral = storeMapping.reduce((prev, [name, store]) => {\r\n    prev[name] = store\r\n    return prev\r\n  }, {})\r\n\r\n  const dispatch = action => mapReduceStores(store => store.dispatch(action))\r\n  const getState = () => mapReduceStores(store => store.getState())\r\n  const selectFirst = (...names) => {\r\n    for(let name of names) {\r\n      if(storeMap.has(name))\r\n        return storeMap.get(name)\r\n    }\r\n    throw new Error(`None of the requested stores exist in storeMapping | configured => ${JSON.stringify(storeMapping.map(x => x[0]))} requested => ${JSON.stringify(names)}`)\r\n  }\r\n  const select = (...names) => names.filter(x => storeMap.has(x)).map(x => storeMap.get(x))\r\n  return  { ...storesLiteral\r\n          , dispatch\r\n          , getState\r\n          , selectFirst\r\n          , select\r\n          }\r\n}\r\n\r\n\r\n/**\r\n * Returns object implementing redux store interface whose getState method selects a sub tree of the overall state.\r\n * Useful for library components that embed state in a subnode of consumer apps redux state\r\n * @param  {Object}    store      A store to bisect\r\n * @param  {...String} selectKeys The selection path to use with getState\r\n * @return {Object}               A sub store implementing redux store interface\r\n */\r\nexport const bisectStore = (...selectKeys) => (store, defaultState) => {\r\n  if(IS_DEV) assert.ok(store, 'store must exist')\r\n  if(IS_DEV) assert.ok(store.dispatch, 'store must define dispatch')\r\n  if(IS_DEV) assert.ok(store.getState, 'store must define getState')\r\n  if(IS_DEV) assert(selectKeys.length > 0, 'must define one or more keys to select on')\r\n  const selectState = createStateSelector(...selectKeys)\r\n  return  { dispatch: action => store.dispatch(action)\r\n          , subscribe: listener => store.subscribe(listener)\r\n          , getState: () => selectState(store.getState(), defaultState)\r\n          }\r\n}\r\n\r\n\r\n/** Creates a function that selects a sub state from a state tree by path. */\r\nexport const createStateSelector = (...selectKeys) => (state, defaultState) => {\r\n  const hasDefault = typeof defaultState !== 'undefined'\r\n  if(IS_DEV) assert(Array.isArray(selectKeys), 'selectKeys must be an array.')\r\n  if(IS_DEV) assert(selectKeys.length > 0, 'must specify a selection path')\r\n  if(IS_DEV) assert.ok(state, 'state is required')\r\n  let result = state\r\n  for(let selectKey of selectKeys) {\r\n    result = result[selectKey]\r\n    if(IS_DEV) assert.ok(hasDefault || result, `'${selectKey}' state must exist in redux state in key chain [${selectKeys.join(', ')}] (did you forget to import '${selectKeys[0]}' reducer from its library into your combined reducers?) ${JSON.stringify({ state })}`)\r\n    if(!result)\r\n      break\r\n  }\r\n  return result || defaultState\r\n}\r\n\r\n/**\r\n * Creates a function that accepts state and ID for components that require state normalization across multiple instances and returns a function that will select state for the component.\r\n * @param  {string[]|number[]} selectKeys 1 or more key arguments to select the root state to bisect on.\r\n * @return {Function}                     Function that takes an ID and reutrns a normalized state for that ID.\r\n */\r\nexport const createStateBisector = (...selectKeys) => {\r\n  return id => createStateSelector(...selectKeys, id)\r\n}\r\n"
   },
   {
     "__docId__": 1,
+    "kind": "variable",
+    "static": true,
+    "variation": null,
+    "name": "IS_DEV",
+    "memberof": "lib/index.js",
+    "longname": "lib/index.js~IS_DEV",
+    "access": null,
+    "export": false,
+    "importPath": "redux-mux",
+    "importStyle": null,
+    "description": null,
+    "lineNumber": 3,
+    "undocument": true,
+    "type": {
+      "types": [
+        "*"
+      ]
+    }
+  },
+  {
+    "__docId__": 2,
     "kind": "variable",
     "static": true,
     "variation": null,
@@ -29,7 +50,7 @@
       "<caption>Creates a store multiplexer that can dispatch and getState on all stores at once.</caption>\nlet stores = createStoreMultiplexer([['app', appStore], ['fast', fastStore], ['session', sessionStore], ['local', localStore]])\nstores.dispatch('SOME_ACTION')\nlet { app, fast, session, local } = stores.getState()",
       "<caption>Each store can still be individually called with dispatched and getState</caption>\nstores.app.dispatch('ACTION_FOR_APP_STORE_ONLY')\nlet appState = stores.app.getState()"
     ],
-    "lineNumber": 15,
+    "lineNumber": 17,
     "params": [
       {
         "nullable": null,
@@ -57,7 +78,7 @@
     }
   },
   {
-    "__docId__": 2,
+    "__docId__": 3,
     "kind": "variable",
     "static": true,
     "variation": null,
@@ -69,7 +90,7 @@
     "importPath": "redux-mux",
     "importStyle": "{bisectStore}",
     "description": "Returns object implementing redux store interface whose getState method selects a sub tree of the overall state.\nUseful for library components that embed state in a subnode of consumer apps redux state",
-    "lineNumber": 59,
+    "lineNumber": 61,
     "params": [
       {
         "nullable": null,
@@ -107,19 +128,19 @@
     }
   },
   {
-    "__docId__": 3,
+    "__docId__": 4,
     "kind": "variable",
     "static": true,
     "variation": null,
-    "name": "selectState",
+    "name": "createStateSelector",
     "memberof": "lib/index.js",
-    "longname": "lib/index.js~selectState",
+    "longname": "lib/index.js~createStateSelector",
     "access": null,
     "export": true,
     "importPath": "redux-mux",
-    "importStyle": "{selectState}",
-    "description": "Selects a sub state from a state tree by path.",
-    "lineNumber": 72,
+    "importStyle": "{createStateSelector}",
+    "description": "Creates a function that selects a sub state from a state tree by path.",
+    "lineNumber": 75,
     "type": {
       "types": [
         "*"
@@ -128,6 +149,47 @@
   },
   {
     "__docId__": 5,
+    "kind": "variable",
+    "static": true,
+    "variation": null,
+    "name": "createStateBisector",
+    "memberof": "lib/index.js",
+    "longname": "lib/index.js~createStateBisector",
+    "access": null,
+    "export": true,
+    "importPath": "redux-mux",
+    "importStyle": "{createStateBisector}",
+    "description": "Creates a function that accepts state and ID for components that require state normalization across multiple instances and returns a function that will select state for the component.",
+    "lineNumber": 95,
+    "params": [
+      {
+        "nullable": null,
+        "types": [
+          "string[]",
+          "number[]"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "selectKeys",
+        "description": "1 or more key arguments to select the root state to bisect on."
+      }
+    ],
+    "return": {
+      "nullable": null,
+      "types": [
+        "Function"
+      ],
+      "spread": false,
+      "description": "Function that takes an ID and reutrns a normalized state for that ID."
+    },
+    "type": {
+      "types": [
+        "*"
+      ]
+    }
+  },
+  {
+    "__docId__": 7,
     "kind": "external",
     "static": true,
     "variation": null,
@@ -140,7 +202,7 @@
     "builtinExternal": true
   },
   {
-    "__docId__": 6,
+    "__docId__": 8,
     "kind": "external",
     "static": true,
     "variation": null,
@@ -153,7 +215,7 @@
     "builtinExternal": true
   },
   {
-    "__docId__": 7,
+    "__docId__": 9,
     "kind": "external",
     "static": true,
     "variation": null,
@@ -166,7 +228,7 @@
     "builtinExternal": true
   },
   {
-    "__docId__": 8,
+    "__docId__": 10,
     "kind": "external",
     "static": true,
     "variation": null,
@@ -179,7 +241,7 @@
     "builtinExternal": true
   },
   {
-    "__docId__": 9,
+    "__docId__": 11,
     "kind": "external",
     "static": true,
     "variation": null,
@@ -192,7 +254,7 @@
     "builtinExternal": true
   },
   {
-    "__docId__": 10,
+    "__docId__": 12,
     "kind": "external",
     "static": true,
     "variation": null,
@@ -205,7 +267,7 @@
     "builtinExternal": true
   },
   {
-    "__docId__": 11,
+    "__docId__": 13,
     "kind": "external",
     "static": true,
     "variation": null,
@@ -218,7 +280,7 @@
     "builtinExternal": true
   },
   {
-    "__docId__": 12,
+    "__docId__": 14,
     "kind": "external",
     "static": true,
     "variation": null,
@@ -231,7 +293,7 @@
     "builtinExternal": true
   },
   {
-    "__docId__": 13,
+    "__docId__": 15,
     "kind": "external",
     "static": true,
     "variation": null,
@@ -244,7 +306,7 @@
     "builtinExternal": true
   },
   {
-    "__docId__": 14,
+    "__docId__": 16,
     "kind": "external",
     "static": true,
     "variation": null,
@@ -257,7 +319,7 @@
     "builtinExternal": true
   },
   {
-    "__docId__": 15,
+    "__docId__": 17,
     "kind": "external",
     "static": true,
     "variation": null,
@@ -270,7 +332,7 @@
     "builtinExternal": true
   },
   {
-    "__docId__": 16,
+    "__docId__": 18,
     "kind": "external",
     "static": true,
     "variation": null,
@@ -283,7 +345,7 @@
     "builtinExternal": true
   },
   {
-    "__docId__": 17,
+    "__docId__": 19,
     "kind": "external",
     "static": true,
     "variation": null,
@@ -296,7 +358,7 @@
     "builtinExternal": true
   },
   {
-    "__docId__": 18,
+    "__docId__": 20,
     "kind": "external",
     "static": true,
     "variation": null,
@@ -309,7 +371,7 @@
     "builtinExternal": true
   },
   {
-    "__docId__": 19,
+    "__docId__": 21,
     "kind": "external",
     "static": true,
     "variation": null,
@@ -322,7 +384,7 @@
     "builtinExternal": true
   },
   {
-    "__docId__": 20,
+    "__docId__": 22,
     "kind": "external",
     "static": true,
     "variation": null,
@@ -335,7 +397,7 @@
     "builtinExternal": true
   },
   {
-    "__docId__": 21,
+    "__docId__": 23,
     "kind": "external",
     "static": true,
     "variation": null,
@@ -348,7 +410,7 @@
     "builtinExternal": true
   },
   {
-    "__docId__": 22,
+    "__docId__": 24,
     "kind": "external",
     "static": true,
     "variation": null,
@@ -361,7 +423,7 @@
     "builtinExternal": true
   },
   {
-    "__docId__": 23,
+    "__docId__": 25,
     "kind": "external",
     "static": true,
     "variation": null,
@@ -374,7 +436,7 @@
     "builtinExternal": true
   },
   {
-    "__docId__": 24,
+    "__docId__": 26,
     "kind": "external",
     "static": true,
     "variation": null,
@@ -387,7 +449,7 @@
     "builtinExternal": true
   },
   {
-    "__docId__": 25,
+    "__docId__": 27,
     "kind": "external",
     "static": true,
     "variation": null,
@@ -400,7 +462,7 @@
     "builtinExternal": true
   },
   {
-    "__docId__": 26,
+    "__docId__": 28,
     "kind": "external",
     "static": true,
     "variation": null,
@@ -413,7 +475,7 @@
     "builtinExternal": true
   },
   {
-    "__docId__": 27,
+    "__docId__": 29,
     "kind": "external",
     "static": true,
     "variation": null,
@@ -426,7 +488,7 @@
     "builtinExternal": true
   },
   {
-    "__docId__": 28,
+    "__docId__": 30,
     "kind": "external",
     "static": true,
     "variation": null,
@@ -439,7 +501,7 @@
     "builtinExternal": true
   },
   {
-    "__docId__": 29,
+    "__docId__": 31,
     "kind": "external",
     "static": true,
     "variation": null,
@@ -452,7 +514,7 @@
     "builtinExternal": true
   },
   {
-    "__docId__": 30,
+    "__docId__": 32,
     "kind": "external",
     "static": true,
     "variation": null,
@@ -465,7 +527,7 @@
     "builtinExternal": true
   },
   {
-    "__docId__": 31,
+    "__docId__": 33,
     "kind": "external",
     "static": true,
     "variation": null,
@@ -478,7 +540,7 @@
     "builtinExternal": true
   },
   {
-    "__docId__": 32,
+    "__docId__": 34,
     "kind": "external",
     "static": true,
     "variation": null,
@@ -491,7 +553,7 @@
     "builtinExternal": true
   },
   {
-    "__docId__": 33,
+    "__docId__": 35,
     "kind": "external",
     "static": true,
     "variation": null,
@@ -504,7 +566,7 @@
     "builtinExternal": true
   },
   {
-    "__docId__": 34,
+    "__docId__": 36,
     "kind": "external",
     "static": true,
     "variation": null,
@@ -517,7 +579,7 @@
     "builtinExternal": true
   },
   {
-    "__docId__": 35,
+    "__docId__": 37,
     "kind": "external",
     "static": true,
     "variation": null,
@@ -530,7 +592,7 @@
     "builtinExternal": true
   },
   {
-    "__docId__": 36,
+    "__docId__": 38,
     "kind": "external",
     "static": true,
     "variation": null,
@@ -543,7 +605,7 @@
     "builtinExternal": true
   },
   {
-    "__docId__": 37,
+    "__docId__": 39,
     "kind": "external",
     "static": true,
     "variation": null,
@@ -556,7 +618,7 @@
     "builtinExternal": true
   },
   {
-    "__docId__": 38,
+    "__docId__": 40,
     "kind": "external",
     "static": true,
     "variation": null,
@@ -569,7 +631,7 @@
     "builtinExternal": true
   },
   {
-    "__docId__": 39,
+    "__docId__": 41,
     "kind": "external",
     "static": true,
     "variation": null,
@@ -582,7 +644,7 @@
     "builtinExternal": true
   },
   {
-    "__docId__": 40,
+    "__docId__": 42,
     "kind": "external",
     "static": true,
     "variation": null,
@@ -595,7 +657,7 @@
     "builtinExternal": true
   },
   {
-    "__docId__": 41,
+    "__docId__": 43,
     "kind": "external",
     "static": true,
     "variation": null,
@@ -608,7 +670,7 @@
     "builtinExternal": true
   },
   {
-    "__docId__": 42,
+    "__docId__": 44,
     "kind": "external",
     "static": true,
     "variation": null,
@@ -621,7 +683,7 @@
     "builtinExternal": true
   },
   {
-    "__docId__": 43,
+    "__docId__": 45,
     "kind": "external",
     "static": true,
     "variation": null,
@@ -634,7 +696,7 @@
     "builtinExternal": true
   },
   {
-    "__docId__": 44,
+    "__docId__": 46,
     "kind": "external",
     "static": true,
     "variation": null,
@@ -647,7 +709,7 @@
     "builtinExternal": true
   },
   {
-    "__docId__": 45,
+    "__docId__": 47,
     "kind": "external",
     "static": true,
     "variation": null,
@@ -660,7 +722,7 @@
     "builtinExternal": true
   },
   {
-    "__docId__": 46,
+    "__docId__": 48,
     "kind": "external",
     "static": true,
     "variation": null,
@@ -673,7 +735,7 @@
     "builtinExternal": true
   },
   {
-    "__docId__": 47,
+    "__docId__": 49,
     "kind": "external",
     "static": true,
     "variation": null,
@@ -686,7 +748,7 @@
     "builtinExternal": true
   },
   {
-    "__docId__": 48,
+    "__docId__": 50,
     "kind": "external",
     "static": true,
     "variation": null,
@@ -699,7 +761,7 @@
     "builtinExternal": true
   },
   {
-    "__docId__": 49,
+    "__docId__": 51,
     "kind": "external",
     "static": true,
     "variation": null,
@@ -712,7 +774,7 @@
     "builtinExternal": true
   },
   {
-    "__docId__": 50,
+    "__docId__": 52,
     "kind": "external",
     "static": true,
     "variation": null,
@@ -725,7 +787,7 @@
     "builtinExternal": true
   },
   {
-    "__docId__": 51,
+    "__docId__": 53,
     "kind": "external",
     "static": true,
     "variation": null,
@@ -738,7 +800,7 @@
     "builtinExternal": true
   },
   {
-    "__docId__": 53,
+    "__docId__": 55,
     "kind": "external",
     "static": true,
     "variation": null,
@@ -751,7 +813,7 @@
     "builtinExternal": true
   },
   {
-    "__docId__": 54,
+    "__docId__": 56,
     "kind": "external",
     "static": true,
     "variation": null,
@@ -764,7 +826,7 @@
     "builtinExternal": true
   },
   {
-    "__docId__": 55,
+    "__docId__": 57,
     "kind": "external",
     "static": true,
     "variation": null,
@@ -777,7 +839,7 @@
     "builtinExternal": true
   },
   {
-    "__docId__": 56,
+    "__docId__": 58,
     "kind": "external",
     "static": true,
     "variation": null,
@@ -790,7 +852,7 @@
     "builtinExternal": true
   },
   {
-    "__docId__": 57,
+    "__docId__": 59,
     "kind": "external",
     "static": true,
     "variation": null,
@@ -803,7 +865,7 @@
     "builtinExternal": true
   },
   {
-    "__docId__": 58,
+    "__docId__": 60,
     "kind": "external",
     "static": true,
     "variation": null,
@@ -816,7 +878,7 @@
     "builtinExternal": true
   },
   {
-    "__docId__": 59,
+    "__docId__": 61,
     "kind": "external",
     "static": true,
     "variation": null,
@@ -829,7 +891,7 @@
     "builtinExternal": true
   },
   {
-    "__docId__": 60,
+    "__docId__": 62,
     "kind": "external",
     "static": true,
     "variation": null,
