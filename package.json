@@ -1,6 +1,6 @@
 {
   "name": "redux-mux",
-  "version": "0.1.9",
+  "version": "0.1.10",
   "description": "Multiplexer for dispatch and getState of multiple redux stores.",
   "main": "lib/index.js",
   "files": [
@@ -33,7 +33,7 @@
     "monitor"
   ],
   "dependencies": {
-    "chai": "*"
+    "chai": "^3.5.0"
   },
   "devDependencies": {
     "babel-cli": "^6.6.5",
