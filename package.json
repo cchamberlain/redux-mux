@@ -10,7 +10,7 @@
   ],
   "scripts": {
     "start": "babel src/lib -d lib --watch",
-    "prebuild": "rimraf build",
+    "prebuild": "rimraf lib",
     "build": "babel src/lib -d lib",
     "predoc": "rimraf doc",
     "doc": "esdoc -c ./esdoc.json",
