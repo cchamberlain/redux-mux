@@ -1,6 +1,6 @@
 {
   "name": "redux-mux",
-  "version": "0.1.11",
+  "version": "0.1.12",
   "description": "Multiplexer for dispatch and getState of multiple redux stores.",
   "main": "lib/index.js",
   "files": [
@@ -10,7 +10,7 @@
   ],
   "scripts": {
     "start": "babel src/lib -d lib --watch",
-    "prebuild": "rimraf build",
+    "prebuild": "rimraf lib",
     "build": "babel src/lib -d lib",
     "predoc": "rimraf doc",
     "doc": "esdoc -c ./esdoc.json",
