@@ -34,7 +34,7 @@
     "monitor"
   ],
   "dependencies": {
-    "chai": "^3.5.0"
+    "invariant": "^2.2.2"
   },
   "devDependencies": {
     "babel-cli": "^6.7.7",

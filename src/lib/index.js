@@ -1,4 +1,4 @@
-import { assert } from 'chai'
+import invariant from 'invariant'
 
 const IS_DEV = process.env.NODE_ENV !== 'production'
 
@@ -15,9 +15,9 @@ const IS_DEV = process.env.NODE_ENV !== 'production'
  * @return {Object}              An object that can dispatch and getState to all stores or each individually with some useful helpers.
  */
 export const createStoreMultiplexer = storeMapping => {
-  if(IS_DEV) assert.ok(storeMapping, 'storeMapping is required')
-  if(IS_DEV) assert(Array.isArray(storeMapping), 'storeMapping must be an array')
-  if(IS_DEV) assert(storeMapping.every(x => Array.isArray(x) && x.length === 2), 'storeMapping must be an array of [<name>, <store>] arrays')
+  if(IS_DEV) invariant(storeMapping, 'storeMapping is required')
+  if(IS_DEV) invariant(Array.isArray(storeMapping), 'storeMapping must be an array')
+  if(IS_DEV) invariant(storeMapping.every(x => Array.isArray(x) && x.length === 2), 'storeMapping must be an array of [<name>, <store>] arrays')
 
   const storeMap = new Map(storeMapping)
   const mapReduceStores = operation => {
@@ -59,10 +59,10 @@ export const createStoreMultiplexer = storeMapping => {
  * @return {Object}               A sub store implementing redux store interface
  */
 export const bisectStore = (...selectKeys) => (store, defaultState) => {
-  if(IS_DEV) assert.ok(store, 'store must exist')
-  if(IS_DEV) assert.ok(store.dispatch, 'store must define dispatch')
-  if(IS_DEV) assert.ok(store.getState, 'store must define getState')
-  if(IS_DEV) assert(selectKeys.length > 0, 'must define one or more keys to select on')
+  if(IS_DEV) invariant(store, 'store must exist')
+  if(IS_DEV) invariant(store.dispatch, 'store must define dispatch')
+  if(IS_DEV) invariant(store.getState, 'store must define getState')
+  if(IS_DEV) invariant(selectKeys.length > 0, 'must define one or more keys to select on')
   const selectState = createStateSelector(...selectKeys)
   return  { dispatch: action => store.dispatch(action)
           , subscribe: listener => store.subscribe(listener)
@@ -70,17 +70,16 @@ export const bisectStore = (...selectKeys) => (store, defaultState) => {
           }
 }
 
-
 /** Creates a function that selects a sub state from a state tree by path. */
 export const createStateSelector = (...selectKeys) => (state, defaultState) => {
   const hasDefault = typeof defaultState !== 'undefined'
-  if(IS_DEV) assert(Array.isArray(selectKeys), 'selectKeys must be an array.')
-  if(IS_DEV) assert(selectKeys.length > 0, 'must specify a selection path')
-  if(IS_DEV) assert.ok(state, 'state is required')
+  if(IS_DEV) invariant(Array.isArray(selectKeys), 'selectKeys must be an array.')
+  if(IS_DEV) invariant(selectKeys.length > 0, 'must specify a selection path')
+  if(IS_DEV) invariant(state, 'state is required')
   let result = state
   for(let selectKey of selectKeys) {
     result = result[selectKey]
-    if(IS_DEV) assert.ok(hasDefault || result, `'${selectKey}' state must exist in redux state in key chain [${selectKeys.join(', ')}] (did you forget to import '${selectKeys[0]}' reducer from its library into your combined reducers?) ${JSON.stringify({ state })}`)
+    if(IS_DEV) invariant(hasDefault || result, `'${selectKey}' state must exist in redux state in key chain [${selectKeys.join(', ')}] (did you forget to import '${selectKeys[0]}' reducer from its library into your combined reducers?) ${JSON.stringify({ state })}`)
     if(!result)
       break
   }
