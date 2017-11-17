@@ -1,7 +1,7 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-const invariant = require("invariant");
+import * as invariant from "invariant";
+
 const IS_DEV = process.env.NODE_ENV !== "production";
+
 /**
  * Takes in an ordered mapping of names to stores and reduces to a redux store compatible interface that can dispatch and getState to all stores or specific ones.
  * @example <caption>Creates a store multiplexer that can dispatch and getState on all stores at once.</caption>
@@ -14,13 +14,15 @@ const IS_DEV = process.env.NODE_ENV !== "production";
  * @param  {Array} storeMapping  The mapping of store names to store references.
  * @return {Object}              An object that can dispatch and getState to all stores or each individually with some useful helpers.
  */
-function createStoreMultiplexer(storeMapping) {
+export function createStoreMultiplexer(storeMapping: any[]) {
     if (IS_DEV) {
         invariant(storeMapping, "storeMapping is required");
         invariant(Array.isArray(storeMapping), "storeMapping must be an array");
         invariant(storeMapping.every(x => Array.isArray(x) && x.length === 2), "storeMapping must be an array of [<name>, <store>] arrays");
     }
-    const storeMap = new Map(storeMapping);
+
+    const storeMap = new Map < string,
+        any > (storeMapping);
     const mapReduceStores = operation => {
         let result = {};
         for (let [name, store] of storeMap.entries()) {
@@ -28,10 +30,12 @@ function createStoreMultiplexer(storeMapping) {
         }
         return result;
     };
+
     const storesLiteral = storeMapping.reduce((prev, [name, store]) => {
         prev[name] = store;
         return prev;
     }, {});
+
     const dispatch = action => mapReduceStores(store => store.dispatch(action));
     const getState = () => mapReduceStores(store => store.getState());
     const selectFirst = (...names) => {
@@ -42,12 +46,14 @@ function createStoreMultiplexer(storeMapping) {
         throw new Error(`None of the requested stores exist in storeMapping | configured => ${JSON.stringify(storeMapping.map(x => x[0]))} requested => ${JSON.stringify(names)}`);
     };
     const select = (...names) => names.filter(x => storeMap.has(x)).map(x => storeMap.get(x));
-    return Object.assign({}, storesLiteral, { dispatch,
+    return { ...storesLiteral,
+        dispatch,
         getState,
         selectFirst,
-        select });
+        select
+    };
 }
-exports.createStoreMultiplexer = createStoreMultiplexer;
+
 /**
  * Returns object implementing redux store interface whose getState method selects a sub tree of the overall state.
  * Useful for library components that embed state in a subnode of consumer apps redux state
@@ -55,7 +61,7 @@ exports.createStoreMultiplexer = createStoreMultiplexer;
  * @param  {...String} selectKeys The selection path to use with getState
  * @return {Object}               A sub store implementing redux store interface
  */
-function bisectStore(...selectKeys) {
+export function bisectStore(...selectKeys) {
     return (store, defaultState) => {
         if (IS_DEV) {
             invariant(store, "store must exist");
@@ -71,9 +77,9 @@ function bisectStore(...selectKeys) {
         };
     };
 }
-exports.bisectStore = bisectStore;
+
 /** Creates a function that selects a sub state from a state tree by path. */
-function createStateSelector(...selectKeys) {
+export function createStateSelector(...selectKeys) {
     return (state, defaultState) => {
         const hasDefault = typeof defaultState !== "undefined";
         if (IS_DEV) {
@@ -87,19 +93,17 @@ function createStateSelector(...selectKeys) {
             if (IS_DEV) {
                 invariant(hasDefault || result, `'${selectKey}' state must exist in redux state in key chain [${selectKeys.join(", ")}] (did you forget to import '${selectKeys[0]}' reducer from its library into your combined reducers?) ${JSON.stringify({ state })}`);
             }
-            if (!result)
-                break;
+            if (!result) break;
         }
         return result || defaultState;
     };
 }
-exports.createStateSelector = createStateSelector;
+
 /**
  * Creates a function that accepts state and ID for components that require state normalization across multiple instances and returns a function that will select state for the component.
  * @param  {string[]|number[]} selectKeys 1 or more key arguments to select the root state to bisect on.
  * @return {Function}                     Function that takes an ID and reutrns a normalized state for that ID.
  */
-function createStateBisector(...selectKeys) {
+export function createStateBisector(...selectKeys) {
     return id => createStateSelector(...selectKeys, id);
 }
-exports.createStateBisector = createStateBisector;
