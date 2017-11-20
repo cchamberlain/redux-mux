@@ -21,14 +21,11 @@ export function createStoreMultiplexer(storeMapping: any[]) {
         invariant(storeMapping.every(x => Array.isArray(x) && x.length === 2), "storeMapping must be an array of [<name>, <store>] arrays");
     }
 
-    const storeMap = new Map < string,
-        any > (storeMapping);
+    const storeMap = new Map <string, any> (storeMapping);
     const mapReduceStores = operation => {
-        let result = {};
-        for (let [name, store] of storeMap.entries()) {
-            result[name] = operation(store);
-        }
-        return result;
+        return Array.from(storeMap).reduce((_, [name, store]) => {
+            return { ..._, [name]: operation(store) };
+        });
     };
 
     const storesLiteral = storeMapping.reduce((prev, [name, store]) => {
