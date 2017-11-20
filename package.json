@@ -1,6 +1,6 @@
 {
   "name": "redux-mux",
-  "version": "0.2.2",
+  "version": "0.3.0",
   "description": "Multiplexer for dispatch and getState of multiple redux stores.",
   "main": "lib/index.js",
   "types": "index.d.ts",
